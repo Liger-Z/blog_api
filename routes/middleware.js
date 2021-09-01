@@ -26,7 +26,7 @@ const verifyToken = (req, res, next) => {
 
 const restrictAccess = (req, res, next) => {
   if (!req.authorized) {
-    return res.status(401).send('UNAUTHORIZED');
+    return res.status(401).json({msg: 'UNAUTHORIZED'});
   };
 
   next();

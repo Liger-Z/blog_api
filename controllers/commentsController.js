@@ -7,7 +7,6 @@ const index = (req, res, next) => {
     .exec((err, comments) => {
       if (err) return next(err);
 
-      console.log(comments);
       res.send(comments);
     });
 };

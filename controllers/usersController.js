@@ -70,14 +70,31 @@ const create = [
 ];
 
 const update = [
-  body('username', 'Please enter a username!')
+  body('oldPassword')
     .trim()
     .escape()
     .isLength({ min: 1 })
+    .custom(async (value, { req }) => {
+      const match = await bcrypt.compare(value, req.user.password);
+
+      if (!match) {
+        throw new Error('Incorrect Password!');
+      }
+    }),
+
+  body('newPassword', 'Please enter a new password!')
+    .trim()
+    .escape()
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long!'),
+
+  body('newPasswordConfirmation')
+    .trim()
+    .escape()
     .custom((value, { req }) => {
-      // Must input a different username from their current username
-      if (value === req.user.username)
-        throw new Error("You didn't change your username...");
+      if (value !== req.body.newPassword) {
+        throw new Error('Passwords do not match!');
+      }
 
       return true;
     }),
@@ -85,9 +102,9 @@ const update = [
   (req, res, next) => {
     const errors = validationResult(req);
 
-    // Cannot change a username if you are not logged in as that user
+    // Cannot change a password if you are not logged in as that user
     if (req.user.id !== req.params.userId) {
-      return res.status(403).send('Forbidden');
+      return res.status(403).json({ msg: 'FORBIDDEN' });
     }
 
     if (!errors.isEmpty()) {
@@ -97,15 +114,19 @@ const update = [
         })
       );
     } else {
-      models.User.updateOne(
-        { username: req.user.username },
-        { username: req.body.username },
-        (err, updateResult) => {
-          if (err) return next(err);
+      bcrypt.hash(req.body.newPassword, 10, (err, hashedPassword) => {
+        if (err) return next(err);
 
-          return res.send(`Username changed to ${req.body.username}!`);
-        }
-      );
+        models.User.updateOne(
+          { username: req.user.username },
+          { password: hashedPassword },
+          (err, updateResult) => {
+            if (err) return next(err);
+
+            return res.send({ msg: `Password changed!` });
+          }
+        );
+      });
     }
   },
 ];

@@ -29,7 +29,7 @@ app.use('/auth', router.auth);
 
 app.use((err, req, res, next) => {
   console.log(err);
-  res.status(400).send(err)
+  res.status(400).json(err)
 })
 
 
